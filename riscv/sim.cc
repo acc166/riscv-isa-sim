@@ -21,6 +21,9 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 
+// Para instanciar
+#include can_oc.h
+
 volatile bool ctrlc_pressed = false;
 static void handle_signal(int sig)
 {
@@ -70,6 +73,20 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     bus.add_device(x.first, x.second);
 
   bus.add_device(DEBUG_START, &debug_module);
+
+
+  // create can_oc
+  reg_t can_oc_base;
+  uint32_t can_oc_shift, can_oc_io_width;
+  if (fdt_parse_can_oc(fdt, &can_oc_base,
+                    	&can_oc_shift, &can_oc_io_width, "can_oca") == 0) {
+	assert(intctrl);
+	can_oc.reset(new can_oc_t(&bus, intctrl, CAN_OC_INTERRUPT_ID,
+                            	can_oc_shift, can_oc_io_width));
+	bus.add_device(can_oc_base, can_oc.get());
+  }
+
+
 
   socketif = NULL;
 #ifdef HAVE_BOOST_ASIO
@@ -274,6 +291,32 @@ void sim_t::step(size_t n)
       }
     }
   }
+  
+  for (size_t i = 0, steps = 0; i < n; i += steps)
+  {
+    steps = std::min(n - i, INTERLEAVE - current_step);
+    procs[current_proc]->step(steps);
+
+
+    current_step += steps;
+    if (current_step == INTERLEAVE)
+    {
+      current_step = 0;
+      procs[current_proc]->get_mmu()->yield_load_reservation();
+      if (++current_proc == procs.size())
+      {
+    	   current_proc = 0;
+    	   if (clint) clint->increment(INTERLEAVE / INSNS_PER_RTC_TICK);
+      	   if (apbuart) apbuart->tick();
+
+
+          // Otros ticks
+    	   if (can_oc) can_oc->tick();
+  	}
+    }
+  }
+  
+  
 }
 
 void sim_t::add_device(reg_t addr, std::shared_ptr<abstract_device_t> dev) {
@@ -437,3 +480,4 @@ void sim_t::proc_reset(unsigned id)
 {
   debug_module.proc_reset(id);
 }
+

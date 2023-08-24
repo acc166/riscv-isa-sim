@@ -165,6 +165,45 @@ class ns16550_t : public abstract_device_t {
   static const int MAX_BACKOFF = 16;
 };
 
+//--
+// CAN_OC class definition	
+//--
+class can_oc_t : public abstract_device_t {
+ public:
+  can_oc_t(class bus_t *bus, abstract_interrupt_controller_t *intctrl,
+            uint32_t interrupt_id, uint32_t reg_shift, uint32_t reg_io_width);
+  ~can_oc_t();
+  
+  // Método que se ejecutará cuando se lean los registros del controlador
+  bool load(reg_t addr, size_t len, uint8_t* bytes);
+
+
+  // Método que se ejecutará cuando se escriba en los registros del controlador
+  bool store(reg_t addr, size_t len, const uint8_t* bytes);
+
+
+  // Método invocado de forma cíclica por parte del simulador y que permite
+  // realizar acciones temporizadas
+  void tick(void);
+
+
+  size_t size() { return CAN_OC_SIZE; }
+
+
+ private:
+  class bus_t *bus;
+  abstract_interrupt_controller_t *intctrl;
+  uint32_t interrupt_id;
+  uint32_t reg_shift;
+  uint32_t reg_io_width;
+  
+  // 32 registros de 8 bits, ver especificación del controlador
+  uint8_t registros[32];
+
+
+};
+
+
 template<typename T>
 void write_little_endian_reg(T* word, reg_t addr, size_t len, const uint8_t* bytes)
 {

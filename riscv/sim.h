@@ -85,6 +85,9 @@ private:
 
   socketif_t *socketif;
   std::ostream sout_; // used for socket and terminal interface
+  
+  // Periferico CAN_OC
+  std::unique_ptr<can_oc_t> can_oc;
 
   processor_t* get_core(const std::string& i);
   void step(size_t n); // step through simulation

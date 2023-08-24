@@ -18,4 +18,12 @@
 #define EXT_IO_BASE        0x40000000
 #define DRAM_BASE          0x80000000
 
+// Constantes para trabajar con el controlador
+#define CAN_OC_BASE       	    0xFC003000
+#define CAN_OC_SIZE       	    0x100
+#define CAN_OC_REG_SHIFT  	    0
+#define CAN_OC_REG_IO_WIDTH    4
+#define CAN_OC_INTERRUPT_ID    3
+
+
 #endif

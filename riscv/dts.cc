@@ -92,6 +92,24 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
          "    compatible = \"ucb,htif0\";\n"
          "  };\n"
          "};\n";
+         
+         
+   s << "	CAN_OC: can_oc@" << CAN_OC_BASE << " {\n"
+     	"  	compatible = \"can_oca\";\n"
+     	"  	clock-frequency = <" << std::dec << (cpu_hz/insns_per_rtc_tick) 
+                                                                        << ">;\n"
+     	"  	interrupt-parent = <&PLIC>;\n"
+     	"  	interrupts = <" << std::dec << CAN_OC_INTERRUPT_ID;
+  reg_t can_ocbs = CAN_OC_BASE;
+  reg_t can_ocsz = CAN_OC_SIZE;
+  s << std::hex << ">;\n"
+     	"  	reg = <0x" << (can_ocbs >> 32) << " 0x" << (can_ocbs & (uint32_t)-1)
+               << " 0x" << (can_ocsz >> 32) << " 0x" << (can_ocsz & (uint32_t)-1) 
+               << ">;\n"
+     	"  	reg-shift = <0x" << CAN_OC_REG_SHIFT << ">;\n"
+     	"  	reg-io-width = <0x" << CAN_OC_REG_IO_WIDTH << ">;\n"
+     	"	};\n"
+         
   return s.str();
 }
 
@@ -385,3 +403,45 @@ int fdt_parse_mmu_type(const void *fdt, int cpu_offset, const char **mmu_type)
 
   return 0;
 }
+
+int fdt_parse_can_oc(void *fdt, reg_t *can_oc_addr,
+                  	uint32_t *reg_shift, uint32_t *reg_io_width,
+                  	const char *compatible)
+{
+  int nodeoffset, len, rc;
+  const fdt32_t *reg_p;
+
+
+  nodeoffset = fdt_node_offset_by_compatible(fdt, -1, compatible);
+  if (nodeoffset < 0)
+	return nodeoffset;
+
+
+  rc = fdt_get_node_addr_size(fdt, nodeoffset, can_oc_addr, NULL, "reg");
+  if (rc < 0 || !can_oc_addr)
+	return -ENODEV;
+
+
+  reg_p = (fdt32_t *)fdt_getprop(fdt, nodeoffset, "reg-shift", &len);
+  if (reg_shift) {
+	if (reg_p) {
+  	*reg_shift = fdt32_to_cpu(*reg_p);
+	} else {
+  	*reg_shift = CAN_OC_REG_SHIFT;
+	}
+  }
+
+
+  reg_p = (fdt32_t *)fdt_getprop(fdt, nodeoffset, "reg-io-width", &len);
+  if (reg_io_width) {
+	if (reg_p) {
+  	*reg_io_width = fdt32_to_cpu(*reg_p);
+	} else {
+  	*reg_io_width = CAN_OC_REG_IO_WIDTH;
+	}
+  }
+
+
+  return 0;
+}
+
