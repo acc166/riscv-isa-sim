@@ -36,6 +36,6 @@ int fdt_parse_mmu_type(const void *fdt, int cpu_offset, const char **mmu_type);
 // Function for the configuration of the controller
 int fdt_parse_can_oc(void *fdt, reg_t *can_oc_addr,
                   	uint32_t *reg_shift, uint32_t *reg_io_width,
-                  	const char *compatible):
+                  	const char *compatible);
                   	
 #endif
